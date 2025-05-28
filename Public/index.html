@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Quiz App</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-blue-50 min-h-screen flex items-center justify-center p-6">
+  <div class="w-full max-w-3xl bg-white p-8 rounded-lg shadow-xl">
+    <h2 class="text-3xl font-bold text-blue-800 mb-6 text-center">🚀 Take the Quiz</h2>
+    <div id="progress" class="text-right mb-4 text-sm text-gray-600"></div>
+    <form id="quiz-form" class="space-y-6"></form>
+    <button id="submitBtn" class="bg-blue-600 text-white px-4 py-2 rounded w-full mt-4" disabled>Submit</button>
+    <div id="error" class="text-red-600 font-semibold text-center mt-4"></div>
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const form = document.getElementById('quiz-form');
+      const progress = document.getElementById('progress');
+      const submitBtn = document.getElementById('submitBtn');
+      const errorDiv = document.getElementById('error');
+      const token = localStorage.getItem('token');
+
+      if (!token) {
+        window.location.href = 'login.html';
+        return;
+      }
+
+      fetch('/questions', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      .then(res => {
+        if (!res.ok) throw new Error('Unauthorized');
+        return res.json();
+      })
+      .then(questions => {
+        if (!Array.isArray(questions) || questions.length === 0) {
+          form.innerHTML = '<p class="text-red-600">No questions available.</p>';
+          return;
+        }
+
+        // Render questions
+        questions.forEach((q, idx) => {
+          const div = document.createElement('div');
+          div.className = 'bg-blue-50 p-4 rounded-lg';
+          const label = `${idx + 1}. ${q.question}${q.required ? ' <span class="text-red-500">*</span>' : ''}`;
+          div.innerHTML = `
+            <p class='font-medium mb-2'>${label}</p>
+            ${q.options.map(opt => `
+              <label class="block">
+                <input type="radio" name="q${q.id}" value="${opt}" class="mr-2" onclick="handleDeselect(this, 'q${q.id}')">
+                ${opt}
+              </label>
+            `).join('')}
+          `;
+          form.appendChild(div);
+        });
+
+        // Updated progress handler
+        form.addEventListener("change", () => {
+          let requiredAnswered = 0;
+          let totalAnswered = 0;
+
+          questions.forEach(q => {
+            const selected = document.querySelector(`input[name=q${q.id}]:checked`);
+            if (selected) {
+              totalAnswered++;
+              if (q.required) requiredAnswered++;
+            }
+          });
+
+          const totalRequired = questions.filter(q => q.required).length;
+          progress.innerText = `📝 Progress: ${requiredAnswered}/${totalRequired} required, ${totalAnswered}/${questions.length} total`;
+
+          submitBtn.disabled = requiredAnswered < totalRequired;
+        });
+
+        // Submit button logic
+        submitBtn.disabled = false;
+        submitBtn.onclick = async () => {
+          const answers = questions.map(q => {
+            const selected = document.querySelector(`input[name=q${q.id}]:checked`);
+            return selected ? selected.value : null;
+          });
+
+          const missingRequired = [];
+          questions.forEach((q, i) => {
+            if (q.required && !answers[i]) {
+              missingRequired.push(i + 1);
+            }
+          });
+
+          if (missingRequired.length > 0) {
+            errorDiv.innerText = `❌ All mandatory questions must be answered. Missing: Question(s) ${missingRequired.join(', ')}`;
+           return;
+
+
+          }
+
+          try {
+            const response = await fetch('/submit', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+              },
+              body: JSON.stringify({ answers })
+            });
+
+            if (response.status === 409) {
+              errorDiv.innerText = '⚠️ You have already submitted the quiz.';
+              return;
+            }
+
+            if (!response.ok) {
+              errorDiv.innerText = '❌ Submission failed. Try again.';
+              return;
+            }
+
+            const data = await response.json();
+            localStorage.setItem('quizScore', data.score);
+            localStorage.setItem('quizRank', data.rank);
+            localStorage.setItem('quizPass', data.result);
+            window.location.href = 'result.html';
+          } catch (err) {
+            errorDiv.innerText = '❌ Could not submit. Check your connection.';
+            console.error(err);
+          }
+        };
+      })
+      .catch(err => {
+        errorDiv.innerText = '❌ Session expired or unauthorized. Redirecting...';
+        setTimeout(() => window.location.href = 'login.html', 2000);
+      });
+    });
+
+    function handleDeselect(current, groupName) {
+      const radios = document.querySelectorAll(`input[name="${groupName}"]`);
+      radios.forEach(radio => {
+        if (radio !== current && radio.dataset.clicked) {
+          delete radio.dataset.clicked;
+        }
+      });
+
+      if (current.dataset.clicked) {
+        current.checked = false;
+        delete current.dataset.clicked;
+      } else {
+        current.dataset.clicked = true;
+      }
+    }
+  </script>
+</body>
+</html>

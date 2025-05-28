@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>All Results</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-10">
+  <div class="max-w-5xl mx-auto bg-white p-8 rounded-lg shadow">
+    <h2 class="text-3xl font-bold mb-6 text-center text-blue-800">📊 Quiz Leaderboard</h2>
+
+    <div class="text-center font-semibold mb-4">
+      <span id="totalUsers"></span>
+    </div>
+
+    <table class="min-w-full border text-sm text-center">
+      <thead class="bg-gray-200">
+        <tr>
+          <th class="p-2">#</th>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Score</th>
+          <th>Rank</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody id="resultsTable"></tbody>
+    </table>
+
+    <p id="noData" class="text-center text-red-600 mt-4 hidden">No records found.</p>
+  </div>
+
+  <script>
+    async function fetchResults() {
+      try {
+        const res = await fetch('/results', {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+
+        const data = await res.json();
+        const table = document.getElementById('resultsTable');
+        const total = document.getElementById('totalUsers');
+        const noData = document.getElementById('noData');
+
+        table.innerHTML = '';
+        if (!Array.isArray(data) || data.length === 0) {
+          noData.classList.remove('hidden');
+          total.innerText = '';
+          return;
+        }
+
+        total.innerText = `👥 Total Registered Users: ${data.length}`;
+
+        data.forEach((user, i) => {
+          const row = `
+            <tr class="${i % 2 === 0 ? 'bg-gray-50' : ''}">
+              <td class="border p-2">${i + 1}</td>
+              <td class="border p-2">${user.name}</td>
+              <td class="border p-2">${user.email}</td>
+              <td class="border p-2">${user.score}</td>
+              <td class="border p-2">${user.rank}</td>
+              <td class="border p-2 font-semibold ${user.result === 'Pass' ? 'text-green-600' : 'text-red-600'}">
+                ${user.result}
+              </td>
+            </tr>
+          `;
+          table.innerHTML += row;
+        });
+      } catch (err) {
+        console.error('Error loading leaderboard:', err);
+        document.getElementById('noData').classList.remove('hidden');
+      }
+    }
+
+    fetchResults();
+    setInterval(fetchResults, 10000);
+  </script>
+</body>
+</html>

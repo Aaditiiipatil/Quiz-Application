@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Welcome to the Quiz</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-100 via-white to-blue-200 px-4">
+  <div class="bg-white w-full max-w-md p-8 rounded-xl shadow-2xl">
+    <h1 class="text-3xl font-bold text-blue-800 text-center mb-6">🚀 Welcome to the Quiz!</h1>
+
+    <form onsubmit="login(event)" class="space-y-4" autocomplete="off">
+      <div>
+        <label for="name" class="block text-gray-700 font-semibold mb-1">Your Name</label>
+        <input id="name" type="text" placeholder="Enter your name"
+               oninput="validateNameInput(this)"
+               class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 outline-none" required />
+      </div>
+
+      <div>
+        <label for="email" class="block text-gray-700 font-semibold mb-1">Email Address</label>
+        <input id="email" type="email" placeholder="Enter your email"
+               class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 outline-none" required />
+      </div>
+
+      <button type="submit"
+              class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded-lg transition duration-200">
+        Start Quiz
+      </button>
+    </form>
+
+    <p id="error" class="text-red-600 text-center font-semibold mt-4"></p>
+  </div>
+
+  <script>
+    function validateNameInput(input) {
+      // Replace anything that's not a letter or space
+      input.value = input.value.replace(/[^A-Za-z\s]/g, '');
+    }
+
+    async function login(e) {
+      e.preventDefault();
+      const name = document.getElementById('name').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const errorDiv = document.getElementById('error');
+
+      const nameRegex = /^[A-Za-z\s]+$/;
+      const emailRegex = /^[a-z0-9](\.?[a-z0-9]){5,}@gmail\.com$/;
+
+      if (!nameRegex.test(name)) {
+        errorDiv.innerText = '❌ Please enter a valid name (letters and spaces only).';
+        return;
+      }
+
+      if (!emailRegex.test(email)) {
+        errorDiv.innerText = '❌ Please enter a valid Gmail address (e.g., example@gmail.com).';
+        return;
+      }
+
+      try {
+        const res = await fetch('/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, email })
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          errorDiv.innerText = data.error || 'Login failed';
+          return;
+        }
+
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('name', name);
+        localStorage.setItem('email', email);
+        window.location.href = 'index.html';
+      } catch (err) {
+        errorDiv.innerText = '⚠️ Server error. Try again later.';
+        console.error(err);
+      }
+    }
+  </script>
+</body>
+</html>

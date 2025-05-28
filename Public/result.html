@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Quiz Result</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-green-50 flex items-center justify-center min-h-screen p-6">
+  <div class="bg-white p-8 rounded-lg shadow-xl text-center w-full max-w-md">
+    <h1 class="text-2xl font-bold mb-4 text-green-700">🎉 Your Quiz Result</h1>
+    <p class="text-lg">Score: <span id="score"></span></p>
+    <p class="text-lg">Rank: <span id="rank"></span></p>
+    <p class="text-lg">Result: <span id="result" class="font-semibold"></span></p>
+    <p id="feedback" class="mt-4 font-semibold text-red-600"></p>
+    <p class="mt-6 text-gray-600 italic">Thanks for participating in the quiz!</p>
+  </div>
+
+  <script>
+    // Personal result
+    const score = localStorage.getItem('quizScore');
+    const rank = localStorage.getItem('quizRank');
+    const resultText = localStorage.getItem('quizPass');
+
+    document.getElementById('score').innerText = score;
+    document.getElementById('rank').innerText = rank;
+    
+    const resultSpan = document.getElementById('result');
+    const feedback = document.getElementById('feedback');
+
+    resultSpan.innerText = resultText;
+    resultSpan.classList.add(resultText === 'Pass' ? 'text-green-600' : 'text-red-600');
+
+    if (parseInt(score) === 0) {
+      feedback.innerText = '😓 You scored zero. Don’t worry, try again!';
+    }
+
+    // Leaderboard logic (in case reused on dashboard or merged)
+    async function fetchResults() {
+      try {
+        const res = await fetch('/results', {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+
+        const data = await res.json();
+        const table = document.getElementById('resultsTable');
+        const total = document.getElementById('totalUsers');
+        const noData = document.getElementById('noData');
+
+        if (table && total && noData) {
+          table.innerHTML = '';
+          if (!Array.isArray(data) || data.length === 0) {
+            noData.classList.remove('hidden');
+            total.innerText = '';
+            return;
+          }
+
+          total.innerText = ` Total Registered Users: ${data.length}`;
+
+          data.forEach((user, i) => {
+            const row = `
+              <tr class="${i % 2 === 0 ? 'bg-gray-50' : ''}">
+                <td class="border p-2">${i + 1}</td>
+                <td class="border p-2">${user.name}</td>
+                <td class="border p-2">${user.email}</td>
+                <td class="border p-2">${user.score}</td>
+                <td class="border p-2">${user.rank}</td>
+                <td class="border p-2 font-semibold ${user.result === 'Pass' ? 'text-green-600' : 'text-red-600'}">
+                  ${user.result}
+                </td>
+              </tr>
+            `;
+            table.innerHTML += row;
+          });
+        }
+      } catch (err) {
+        console.error('Error loading leaderboard:', err);
+        const noData = document.getElementById('noData');
+        if (noData) noData.classList.remove('hidden');
+      }
+    }
+
+    fetchResults();
+    setInterval(fetchResults, 10000);
+  </script>
+</body>
+</html>

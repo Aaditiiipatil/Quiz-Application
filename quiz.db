@@ -1,0 +1,19 @@
+CREATE DATABASE quizdb;
+
+
+-- Create the users table
+CREATE TABLE users (
+    id SERIAL PRIMARY KEY,
+    name TEXT NOT NULL,
+    email TEXT NOT NULL
+);
+
+-- Create the results table
+CREATE TABLE results (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id),
+    score INTEGER NOT NULL,
+    submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+

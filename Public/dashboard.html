@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Quiz Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-blue-50 min-h-screen p-6">
+
+  <!-- User Result Summary -->
+  <div class="max-w-3xl mx-auto bg-white p-6 rounded-lg shadow mb-8">
+    <h2 class="text-2xl font-bold text-green-700 text-center mb-4">🎉 Your Quiz Result</h2>
+    <div class="text-center text-lg">
+      <p>Score: <span id="score" class="font-semibold"></span></p>
+      <p>Rank: <span id="rank" class="font-semibold"></span></p>
+      <p>Result: <span id="result" class="font-semibold"></span></p>
+      <a href="login.html" class="block mt-4 text-blue-600 underline">🔁 Take Quiz Again</a>
+    </div>
+  </div>
+
+  <!-- Leaderboard -->
+  <div class="max-w-6xl mx-auto bg-white p-8 rounded-lg shadow">
+    <h2 class="text-2xl font-bold mb-4 text-blue-800 text-center">📊 Leaderboard</h2>
+    <p id="totalUsers" class="text-center font-semibold mb-4"></p>
+
+    <table class="min-w-full text-sm border text-center">
+      <thead class="bg-gray-200">
+        <tr>
+          <th class="p-2">#</th>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Score</th>
+          <th>Rank</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody id="resultsTable"></tbody>
+    </table>
+
+    <p id="noData" class="text-center text-red-600 mt-4 hidden">No records found.</p>
+  </div>
+
+  <script>
+    // User Result
+    document.getElementById('score').innerText = localStorage.getItem('quizScore');
+    document.getElementById('rank').innerText = localStorage.getItem('quizRank');
+    const resultText = localStorage.getItem('quizPass');
+    const resultSpan = document.getElementById('result');
+    resultSpan.innerText = resultText;
+    resultSpan.classList.add(resultText === 'Pass' ? 'text-green-600' : 'text-red-600');
+
+    // Leaderboard
+    async function fetchResults() {
+      try {
+        const res = await fetch('/results', {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        });
+        const data = await res.json();
+        const table = document.getElementById('resultsTable');
+        const total = document.getElementById('totalUsers');
+        const noData = document.getElementById('noData');
+
+        table.innerHTML = '';
+
+        if (!Array.isArray(data) || data.length === 0) {
+          noData.classList.remove('hidden');
+          total.innerText = '';
+          return;
+        }
+
+        total.innerText = `👥 Total Registered Users: ${data.length}`;
+
+        data.forEach((user, i) => {
+          const row = `
+            <tr class="${i % 2 === 0 ? 'bg-gray-50' : ''}">
+              <td class="border p-2">${i + 1}</td>
+              <td class="border p-2">${user.name}</td>
+              <td class="border p-2">${user.email}</td>
+              <td class="border p-2">${user.score}</td>
+              <td class="border p-2">${user.rank}</td>
+              <td class="border p-2 font-semibold ${user.result === 'Pass' ? 'text-green-600' : 'text-red-600'}">
+                ${user.result}
+              </td>
+            </tr>
+          `;
+          table.innerHTML += row;
+        });
+      } catch (err) {
+        console.error('Error loading leaderboard:', err);
+        document.getElementById('noData').classList.remove('hidden');
+      }
+    }
+
+    fetchResults();
+    setInterval(fetchResults, 10000);
+  </script>
+</body>
+</html>
