@@ -131,7 +131,9 @@ app.post('/submit', authenticateToken, async (req, res) => {
 
   let score = 0;
   QUESTIONS.forEach((q, i) => {
-    if (answers[i] === q.answer) score++;
+    if (answers[i] === q.answer) score++; // if (answers[i] && answers[i] ===q.answers{
+                                                              //score++;
+                                                               //}
   });
 
   await pool.query('INSERT INTO users(name, email, score) VALUES($1, $2, $3)', [name, email, score]);
