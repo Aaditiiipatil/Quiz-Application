@@ -168,6 +168,16 @@ app.get('/results', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch results' });
   }
 });
+//  New Route: Get users sorted by submission time (earliest first)
+//app.get('/users-by-time', async (req, res) => {
+  //try {
+    //const result = await pool.query('SELECT * FROM users ORDER BY submitted_at ASC');
+    //res.json(result.rows);
+  } //catch (err) {
+    //console.error('Error fetching users by time:', err);
+    //res.status(500).json({ error: 'Failed to fetch users' });
+ // }
+//});
 
 
 
